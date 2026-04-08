@@ -104,19 +104,19 @@
   map.setZoom(-2);
   map.setMaxBounds(bounds);
 
-  // 🔧 WORKBENCH ICON
-  var benchIcon = L.divIcon({
-    html: "<span style='color:#ff9900;font-size:32px;text-shadow:-2px -2px 0 black,2px -2px 0 black,-2px 2px 0 black,2px 2px 0 black;'>⚒</span>",
-    className: "",
-    iconSize: [32, 32]
-  });
+  // 🔧 WORKBENCH ICON (original size + outline)
+var benchIcon = L.divIcon({
+  html: "<span style='color:#ff9900;font-size:20px;text-shadow:-1px -1px 0 black,1px -1px 0 black,-1px 1px 0 black,1px 1px 0 black;'>⚒</span>",
+  className: "",
+  iconSize: [20, 20]
+});
 
-  // 🟢 GREGORY ICON
-  var gIcon = L.divIcon({
-    html: "<span style='color:lime;font-weight:bold;font-size:32px;text-shadow:-2px -2px 0 black,2px -2px 0 black,-2px 2px 0 black,2px 2px 0 black;'>G</span>",
-    className: "",
-    iconSize: [32, 32]
-  });
+// 🟢 GREGORY ICON (original size + outline)
+var gIcon = L.divIcon({
+  html: "<span style='color:lime;font-weight:bold;font-size:20px;text-shadow:-1px -1px 0 black,1px -1px 0 black,-1px 1px 0 black,1px 1px 0 black;'>G</span>",
+  className: "",
+  iconSize: [20, 20]
+});
 
   let currentZones = {};
 
