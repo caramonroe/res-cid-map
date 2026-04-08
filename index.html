@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>GTA CID Map</title>
+  <title>CID Map System</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
-  <!-- CID FONT -->
   <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
 
   <style>
@@ -19,53 +18,66 @@
     #map {
       height: 100%;
       width: 100%;
-      background: #111;
     }
 
-    #controls {
+    /* TOP BAR */
+    #toolbar {
       position: absolute;
-      top: 10px;
-      left: 60px;
+      top: 0;
+      left: 0;
+      right: 0;
       z-index: 1000;
       background: #111;
-      color: white;
-      padding: 12px;
-      border-radius: 8px;
-      width: 220px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      padding: 8px;
+      align-items: center;
+      border-bottom: 1px solid #333;
     }
 
-    #controls input,
-    #controls select {
-      width: 100%;
-      margin-bottom: 6px;
+    #toolbar select,
+    #toolbar input {
       background: #222;
       color: white;
       border: 1px solid #444;
-      padding: 5px;
+      padding: 4px;
       font-family: 'Special Elite', monospace;
-      font-size: 16px; /* prevents mobile zoom */
+      font-size: 14px;
     }
 
-    #controls label {
-      font-size: 11px;
-      opacity: 0.7;
+    #toolbar button {
+      background: #222;
+      color: white;
+      border: 1px solid #444;
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+
+    #toolbar button.active {
+      background: red;
+    }
+
+    /* MOBILE */
+    @media (max-width: 600px) {
+      #toolbar {
+        bottom: 0;
+        top: auto;
+        flex-direction: column;
+      }
     }
   </style>
 </head>
 
 <body>
 
-<div id="controls">
-  <label>Mode:</label>
+<div id="toolbar">
   <select id="mode">
     <option value="circle">Zone</option>
     <option value="bench">Workbench</option>
     <option value="g">Gregory</option>
   </select>
 
-  <label>Colour:</label>
   <select id="gang">
     <option value="red">Red</option>
     <option value="green">Green</option>
@@ -74,11 +86,11 @@
     <option value="purple">Purple</option>
   </select>
 
-  <label>Radius:</label>
   <input type="range" id="radius" min="25" max="250" step="10" value="100">
 
-  <label>Notes:</label>
-  <input type="text" id="label" placeholder="Enter intel...">
+  <input type="text" id="label" placeholder="Notes...">
+
+  <button id="deleteMode">Delete Mode</button>
 </div>
 
 <div id="map"></div>
@@ -86,155 +98,133 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-  const API = "https://res-cid-api.cara-monroe-docs.workers.dev";
+const API = "https://res-cid-api.cara-monroe-docs.workers.dev";
 
-  var map = L.map('map', {
-    crs: L.CRS.Simple,
-    minZoom: -5,
-    maxZoom: 2
-  });
+var map = L.map('map', {
+  crs: L.CRS.Simple,
+  minZoom: -5,
+  maxZoom: 2
+});
 
-  var width = 5944;
-  var height = 8075;
-  var bounds = [[0, 0], [height, width]];
+var bounds = [[0,0],[8075,5944]];
+L.imageOverlay('map.jpg', bounds).addTo(map);
+map.fitBounds(bounds);
+map.setZoom(-2);
+map.setMaxBounds(bounds);
 
-  L.imageOverlay('map.jpg', bounds).addTo(map);
+// PREVENT LONG PRESS IMAGE SELECT
+document.addEventListener('contextmenu', e => e.preventDefault());
 
-  map.fitBounds(bounds);
-  map.setZoom(-2);
-  map.setMaxBounds(bounds);
+// ICONS
+var benchIcon = L.divIcon({
+  html: "<span style='color:#ff9900;font-size:20px;text-shadow:-1px -1px 0 black,1px -1px 0 black,-1px 1px 0 black,1px 1px 0 black;'>⚒</span>",
+  className: "",
+  iconSize: [20,20]
+});
 
-  // 🔧 WORKBENCH ICON (small + outline)
-  var benchIcon = L.divIcon({
-    html: "<span style='color:#ff9900;font-size:20px;text-shadow:-1px -1px 0 black,1px -1px 0 black,-1px 1px 0 black,1px 1px 0 black;'>⚒</span>",
-    className: "",
-    iconSize: [20, 20]
-  });
+var gIcon = L.divIcon({
+  html: "<span style='color:lime;font-weight:bold;font-size:20px;text-shadow:-1px -1px 0 black,1px -1px 0 black,-1px 1px 0 black,1px 1px 0 black;'>G</span>",
+  className: "",
+  iconSize: [20,20]
+});
 
-  // 🟢 GREGORY ICON (small + outline)
-  var gIcon = L.divIcon({
-    html: "<span style='color:lime;font-weight:bold;font-size:20px;text-shadow:-1px -1px 0 black,1px -1px 0 black,-1px 1px 0 black,1px 1px 0 black;'>G</span>",
-    className: "",
-    iconSize: [20, 20]
-  });
+let currentZones = {};
+let deleteMode = false;
 
-  let currentZones = {};
+// TOGGLE DELETE MODE
+document.getElementById("deleteMode").onclick = function() {
+  deleteMode = !deleteMode;
+  this.classList.toggle("active");
+};
 
-  // 🔄 SYNC
-  async function syncZones() {
-    const res = await fetch(API);
-    const zones = await res.json();
+// SYNC
+async function syncZones() {
+  const res = await fetch(API);
+  const zones = await res.json();
 
-    const newIds = new Set();
+  const newIds = new Set();
 
-    zones.forEach(z => {
-      newIds.add(z.id);
+  zones.forEach(z => {
+    newIds.add(z.id);
 
-      if (!currentZones[z.id]) {
+    if (!currentZones[z.id]) {
 
-        let layer;
+      let layer;
 
-        if (z.color === "bench") {
-          layer = L.marker([z.lat, z.lng], { icon: benchIcon });
-        } 
-        else if (z.color === "g") {
-          layer = L.marker([z.lat, z.lng], { icon: gIcon });
-        } 
-        else {
-          layer = L.circle([z.lat, z.lng], {
-            radius: z.radius,
-            color: z.color,
-            fillColor: z.color,
-            fillOpacity: 0.4
-          });
-        }
-
-        layer.addTo(map);
-        layer.bindPopup(z.label || "Marker");
-
-        layer.on('contextmenu', async function() {
-          await fetch(`${API}?id=${z.id}`, { method: "DELETE" });
+      if (z.color === "bench") {
+        layer = L.marker([z.lat, z.lng], { icon: benchIcon });
+      } 
+      else if (z.color === "g") {
+        layer = L.marker([z.lat, z.lng], { icon: gIcon });
+      } 
+      else {
+        layer = L.circle([z.lat, z.lng], {
+          radius: z.radius,
+          color: z.color,
+          fillColor: z.color,
+          fillOpacity: 0.4
         });
-
-        currentZones[z.id] = layer;
       }
-    });
 
-    for (let id in currentZones) {
-      if (!newIds.has(Number(id))) {
-        map.removeLayer(currentZones[id]);
-        delete currentZones[id];
-      }
-    }
-  }
+      layer.addTo(map);
+      layer.bindPopup(z.label || "Marker");
 
-  // 💾 SAVE
-  async function saveData(data) {
-    await fetch(API, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(data)
-    });
-  }
-
-  // 🖱️ CLICK
-  map.on('click', async function(e) {
-    var mode = document.getElementById('mode').value;
-    var color = document.getElementById('gang').value;
-    var radius = parseInt(document.getElementById('radius').value);
-    var label = document.getElementById('label').value;
-
-    if (mode === "circle") {
-      await saveData({
-        lat: e.latlng.lat,
-        lng: e.latlng.lng,
-        radius,
-        color,
-        label
+      layer.on('click', async function() {
+        if (deleteMode) {
+          await fetch(`${API}?id=${z.id}`, { method: "DELETE" });
+        }
       });
-    }
 
-    if (mode === "bench") {
-      await saveData({
-        lat: e.latlng.lat,
-        lng: e.latlng.lng,
-        radius: 0,
-        color: "bench",
-        label
-      });
-    }
-
-    if (mode === "g") {
-      await saveData({
-        lat: e.latlng.lat,
-        lng: e.latlng.lng,
-        radius: 0,
-        color: "g",
-        label
-      });
+      currentZones[z.id] = layer;
     }
   });
 
-  // 🔁 AUTO SYNC
-  setInterval(syncZones, 2000);
-  syncZones();
+  for (let id in currentZones) {
+    if (!newIds.has(Number(id))) {
+      map.removeLayer(currentZones[id]);
+      delete currentZones[id];
+    }
+  }
+}
 
-  // 📱 MOBILE FIXES
+// SAVE
+async function saveData(data) {
+  await fetch(API, {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(data)
+  });
+}
 
-  function fixMapSize() {
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 300);
+// CLICK MAP
+map.on('click', async function(e) {
+
+  if (deleteMode) return;
+
+  var mode = document.getElementById('mode').value;
+  var color = document.getElementById('gang').value;
+  var radius = parseInt(document.getElementById('radius').value);
+  var label = document.getElementById('label').value;
+
+  if (mode === "circle") {
+    await saveData({lat:e.latlng.lat,lng:e.latlng.lng,radius,color,label});
   }
 
-  document.getElementById('label').addEventListener('focus', fixMapSize);
-  document.getElementById('label').addEventListener('blur', fixMapSize);
+  if (mode === "bench") {
+    await saveData({lat:e.latlng.lat,lng:e.latlng.lng,radius:0,color:"bench",label});
+  }
 
-  window.addEventListener('resize', () => {
-    map.invalidateSize();
-  });
+  if (mode === "g") {
+    await saveData({lat:e.latlng.lat,lng:e.latlng.lng,radius:0,color:"g",label});
+  }
+});
+
+// REALTIME LOOP
+setInterval(syncZones, 2000);
+syncZones();
+
+// MOBILE FIX
+window.addEventListener('resize', () => map.invalidateSize());
 </script>
 
 </body>
