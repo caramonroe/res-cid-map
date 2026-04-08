@@ -84,27 +84,45 @@
   map.setZoom(-2);
   map.setMaxBounds(bounds);
 
-  // LOAD ZONES
-  async function loadZones() {
+  let currentZones = {};
+
+  // LOAD + SYNC ZONES
+  async function syncZones() {
     const res = await fetch(API);
     const zones = await res.json();
 
+    const newIds = new Set();
+
     zones.forEach(z => {
-      const circle = L.circle([z.lat, z.lng], {
-        radius: z.radius,
-        color: z.color,
-        fillColor: z.color,
-        fillOpacity: 0.4
-      }).addTo(map);
+      newIds.add(z.id);
 
-      circle.bindPopup(z.label || "Zone");
+      // If zone doesn't exist yet → add it
+      if (!currentZones[z.id]) {
+        const circle = L.circle([z.lat, z.lng], {
+          radius: z.radius,
+          color: z.color,
+          fillColor: z.color,
+          fillOpacity: 0.4
+        }).addTo(map);
 
-      // DELETE
-      circle.on('contextmenu', async function() {
-        await fetch(`${API}?id=${z.id}`, { method: "DELETE" });
-        location.reload();
-      });
+        circle.bindPopup(z.label || "Zone");
+
+        // DELETE
+        circle.on('contextmenu', async function() {
+          await fetch(`${API}?id=${z.id}`, { method: "DELETE" });
+        });
+
+        currentZones[z.id] = circle;
+      }
     });
+
+    // REMOVE deleted zones
+    for (let id in currentZones) {
+      if (!newIds.has(Number(id))) {
+        map.removeLayer(currentZones[id]);
+        delete currentZones[id];
+      }
+    }
   }
 
   // SAVE
@@ -118,19 +136,20 @@
     });
   }
 
-  // CLICK
+  // CLICK = CREATE (NO RELOAD)
   map.on('click', async function(e) {
     var color = document.getElementById('gang').value;
     var radius = parseInt(document.getElementById('radius').value);
     var label = document.getElementById('label').value;
 
     await saveZone(e.latlng.lat, e.latlng.lng, radius, color, label);
-
-    location.reload();
   });
 
-  loadZones();
-</script>
+  // 🔁 AUTO SYNC EVERY 2 SECONDS
+  setInterval(syncZones, 2000);
 
+  // INITIAL LOAD
+  syncZones();
+</script>
 </body>
 </html>
