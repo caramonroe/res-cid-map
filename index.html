@@ -1,29 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GTA CID Map</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+    }
+
+    #map {
+      height: 100%;
+      width: 100%;
+      background: #111;
+    }
+
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1000;
+      background: white;
+      padding: 8px;
+      border-radius: 8px;
+      font-family: Arial;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="controls">
+  <label>Gang:</label>
+  <select id="gang">
+    <option value="red">Ballas</option>
+    <option value="green">Families</option>
+    <option value="yellow">Vagos</option>
+    <option value="blue">Police</option>
+  </select>
+</div>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
 <script>
+  // CREATE MAP
   var map = L.map('map', {
     crs: L.CRS.Simple,
     minZoom: -5,
-    maxZoom: 2,
-    zoomSnap: 0.25
+    maxZoom: 2
   });
 
+  // IMAGE SIZE (IMPORTANT)
   var width = 5944;
   var height = 8075;
 
   var bounds = [[0, 0], [height, width]];
 
+  // LOAD IMAGE
   var image = L.imageOverlay('map.jpg', bounds).addTo(map);
 
-  map.fitBounds(bounds);   // ✅ THIS WAS MISSING
+  // FIX VIEW
+  map.fitBounds(bounds);
   map.setZoom(-2);
+  map.setMaxBounds(bounds);
 
+  // CLICK = CREATE ZONE
   map.on('click', function(e) {
+    var gangColor = document.getElementById('gang').value;
+
     L.circle(e.latlng, {
-      radius: 300,
-      color: 'red',
-      fillColor: 'red',
+      radius: 500,
+      color: gangColor,
+      fillColor: gangColor,
       fillOpacity: 0.4
     }).addTo(map)
-      .bindPopup("Gang Zone")
+      .bindPopup(gangColor + " zone")
       .openPopup();
   });
 </script>
+
+</body>
+</html>
