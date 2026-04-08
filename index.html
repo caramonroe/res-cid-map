@@ -5,7 +5,7 @@
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
-  <!-- CID TYPEWRITER FONT -->
+  <!-- CID FONT -->
   <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
 
   <style>
@@ -34,7 +34,6 @@
       width: 220px;
       letter-spacing: 1px;
       text-transform: uppercase;
-      box-shadow: 0 0 10px rgba(0,0,0,0.8);
     }
 
     #controls input,
@@ -46,6 +45,7 @@
       border: 1px solid #444;
       padding: 5px;
       font-family: 'Special Elite', monospace;
+      font-size: 16px; /* prevents mobile zoom */
     }
 
     #controls label {
@@ -104,23 +104,23 @@
   map.setZoom(-2);
   map.setMaxBounds(bounds);
 
-  // 🔧 WORKBENCH ICON (original size + outline)
-var benchIcon = L.divIcon({
-  html: "<span style='color:#ff9900;font-size:20px;text-shadow:-1px -1px 0 black,1px -1px 0 black,-1px 1px 0 black,1px 1px 0 black;'>⚒</span>",
-  className: "",
-  iconSize: [20, 20]
-});
+  // 🔧 WORKBENCH ICON (small + outline)
+  var benchIcon = L.divIcon({
+    html: "<span style='color:#ff9900;font-size:20px;text-shadow:-1px -1px 0 black,1px -1px 0 black,-1px 1px 0 black,1px 1px 0 black;'>⚒</span>",
+    className: "",
+    iconSize: [20, 20]
+  });
 
-// 🟢 GREGORY ICON (original size + outline)
-var gIcon = L.divIcon({
-  html: "<span style='color:lime;font-weight:bold;font-size:20px;text-shadow:-1px -1px 0 black,1px -1px 0 black,-1px 1px 0 black,1px 1px 0 black;'>G</span>",
-  className: "",
-  iconSize: [20, 20]
-});
+  // 🟢 GREGORY ICON (small + outline)
+  var gIcon = L.divIcon({
+    html: "<span style='color:lime;font-weight:bold;font-size:20px;text-shadow:-1px -1px 0 black,1px -1px 0 black,-1px 1px 0 black,1px 1px 0 black;'>G</span>",
+    className: "",
+    iconSize: [20, 20]
+  });
 
   let currentZones = {};
 
-  // 🔄 SYNC DATA
+  // 🔄 SYNC
   async function syncZones() {
     const res = await fetch(API);
     const zones = await res.json();
@@ -152,7 +152,6 @@ var gIcon = L.divIcon({
         layer.addTo(map);
         layer.bindPopup(z.label || "Marker");
 
-        // DELETE
         layer.on('contextmenu', async function() {
           await fetch(`${API}?id=${z.id}`, { method: "DELETE" });
         });
@@ -161,7 +160,6 @@ var gIcon = L.divIcon({
       }
     });
 
-    // REMOVE deleted zones
     for (let id in currentZones) {
       if (!newIds.has(Number(id))) {
         map.removeLayer(currentZones[id]);
@@ -221,12 +219,23 @@ var gIcon = L.divIcon({
 
   // 🔁 AUTO SYNC
   setInterval(syncZones, 2000);
-
-  // INITIAL LOAD
   syncZones();
+
+  // 📱 MOBILE FIXES
+
+  function fixMapSize() {
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 300);
+  }
+
+  document.getElementById('label').addEventListener('focus', fixMapSize);
+  document.getElementById('label').addEventListener('blur', fixMapSize);
+
+  window.addEventListener('resize', () => {
+    map.invalidateSize();
+  });
 </script>
 
-</body>
-</html>
 </body>
 </html>
