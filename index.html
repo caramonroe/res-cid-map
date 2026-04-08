@@ -20,18 +20,29 @@
     #controls {
       position: absolute;
       top: 10px;
-      left: 60px; /* 👈 moved right so it doesn't clash */
+      left: 60px;
       z-index: 1000;
-      background: white;
+      background: #111;
+      color: white;
       padding: 10px;
       border-radius: 8px;
       font-family: Arial;
       width: 200px;
     }
 
-    input, select {
+    #controls input,
+    #controls select {
       width: 100%;
-      margin-bottom: 5px;
+      margin-bottom: 6px;
+      background: #222;
+      color: white;
+      border: 1px solid #444;
+      padding: 4px;
+    }
+
+    #controls label {
+      font-size: 12px;
+      opacity: 0.8;
     }
   </style>
 </head>
@@ -49,10 +60,10 @@
   </select>
 
   <label>Radius:</label>
-  <input type="range" id="radius" min="100" max="1000" value="300">
+  <input type="range" id="radius" min="50" max="500" value="200">
 
   <label>Notes:</label>
-  <input type="text" id="label" placeholder="Enter gang name / info">
+  <input type="text" id="label" placeholder="Enter gang / info">
 </div>
 
 <div id="map"></div>
@@ -100,6 +111,7 @@
 
     circle.bindPopup(label || "Zone");
 
+    // RIGHT CLICK = DELETE
     circle.on('contextmenu', function() {
       map.removeLayer(circle);
       zones = zones.filter(z => z.id !== circle._leaflet_id);
