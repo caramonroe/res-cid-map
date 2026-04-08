@@ -14,9 +14,11 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
   var map = L.map('map', {
-    crs: L.CRS.Simple,
-    minZoom: -2
-  });
+  crs: L.CRS.Simple,
+  minZoom: -5,   // allows more zooming out
+  maxZoom: 2,
+  zoomSnap: 0.25
+});
 
 var width = 5944;
 var height = 8075;
