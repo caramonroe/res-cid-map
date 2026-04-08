@@ -10,13 +10,18 @@
     html, body {
       margin: 0;
       height: 100%;
+      background: #000 !important;
       font-family: 'Special Elite', monospace;
-      background: #000;
     }
 
     #map {
       height: 100%;
       width: 100%;
+      background: #000 !important;
+    }
+
+    .leaflet-container {
+      background: #000 !important;
     }
 
     /* CENTERED TOOLBAR */
@@ -39,8 +44,6 @@
 
       border: 1px solid #333;
       box-shadow: 0 0 15px rgba(0,0,0,0.8);
-
-      align-items: center;
     }
 
     #toolbar select,
@@ -63,6 +66,14 @@
 
     #toolbar button.active {
       background: red;
+    }
+
+    /* TOOLTIP STYLE */
+    .leaflet-tooltip {
+      background: rgba(0,0,0,0.9);
+      color: white;
+      border: 1px solid #444;
+      font-family: 'Special Elite', monospace;
     }
 
     /* MOBILE */
@@ -178,8 +189,14 @@ async function syncZones() {
       }
 
       layer.addTo(map);
-      layer.bindPopup(z.label || "Marker");
 
+      // HOVER TOOLTIP
+      layer.bindTooltip(z.label || "Marker", {
+        direction: "top",
+        offset: [0, -10]
+      });
+
+      // DELETE
       layer.on('click', async function() {
         if (deleteMode) {
           await fetch(`${API}?id=${z.id}`, { method: "DELETE" });
