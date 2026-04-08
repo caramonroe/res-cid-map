@@ -39,11 +39,6 @@
       border: 1px solid #444;
       padding: 4px;
     }
-
-    #controls label {
-      font-size: 12px;
-      opacity: 0.8;
-    }
   </style>
 </head>
 
@@ -60,10 +55,10 @@
   </select>
 
   <label>Radius:</label>
-  <input type="range" id="radius" min="25" max="100" value="50">
+  <input type="range" id="radius" min="25" max="250" step="10" value="100">
 
   <label>Notes:</label>
-  <input type="text" id="label" placeholder="Enter gang / info">
+  <input type="text" id="label" placeholder="Enter info">
 </div>
 
 <div id="map"></div>
@@ -71,6 +66,8 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
+  const API = "https://res-cid-api.cara-monroe-docs.workers.dev";
+
   var map = L.map('map', {
     crs: L.CRS.Simple,
     minZoom: -5,
@@ -81,62 +78,55 @@
   var height = 8075;
   var bounds = [[0, 0], [height, width]];
 
-  var image = L.imageOverlay('map.jpg', bounds).addTo(map);
+  L.imageOverlay('map.jpg', bounds).addTo(map);
 
   map.fitBounds(bounds);
   map.setZoom(-2);
   map.setMaxBounds(bounds);
 
-  var zones = [];
+  // LOAD ZONES
+  async function loadZones() {
+    const res = await fetch(API);
+    const zones = await res.json();
 
-  function loadZones() {
-    var saved = JSON.parse(localStorage.getItem('zones') || "[]");
+    zones.forEach(z => {
+      const circle = L.circle([z.lat, z.lng], {
+        radius: z.radius,
+        color: z.color,
+        fillColor: z.color,
+        fillOpacity: 0.4
+      }).addTo(map);
 
-    saved.forEach(z => {
-      createZone(z.lat, z.lng, z.radius, z.color, z.label, false);
-    });
-  }
+      circle.bindPopup(z.label || "Zone");
 
-  function saveZones() {
-    localStorage.setItem('zones', JSON.stringify(zones));
-  }
-
-  function createZone(lat, lng, radius, color, label, save=true) {
-    var circle = L.circle([lat, lng], {
-      radius: radius,
-      color: color,
-      fillColor: color,
-      fillOpacity: 0.4
-    }).addTo(map);
-
-    circle.bindPopup(label || "Zone");
-
-    // RIGHT CLICK = DELETE
-    circle.on('contextmenu', function() {
-      map.removeLayer(circle);
-      zones = zones.filter(z => z.id !== circle._leaflet_id);
-      saveZones();
-    });
-
-    if (save) {
-      zones.push({
-        id: circle._leaflet_id,
-        lat,
-        lng,
-        radius,
-        color,
-        label
+      // DELETE
+      circle.on('contextmenu', async function() {
+        await fetch(`${API}?id=${z.id}`, { method: "DELETE" });
+        location.reload();
       });
-      saveZones();
-    }
+    });
   }
 
-  map.on('click', function(e) {
+  // SAVE
+  async function saveZone(lat, lng, radius, color, label) {
+    await fetch(API, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ lat, lng, radius, color, label })
+    });
+  }
+
+  // CLICK
+  map.on('click', async function(e) {
     var color = document.getElementById('gang').value;
     var radius = parseInt(document.getElementById('radius').value);
     var label = document.getElementById('label').value;
 
-    createZone(e.latlng.lat, e.latlng.lng, radius, color, label);
+    await saveZone(e.latlng.lat, e.latlng.lng, radius, color, label);
+
+    location.reload();
   });
 
   loadZones();
