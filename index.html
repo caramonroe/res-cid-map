@@ -20,7 +20,7 @@
     #controls {
       position: absolute;
       top: 10px;
-      left: 10px;
+      left: 60px; /* 👈 moved right so it doesn't clash */
       z-index: 1000;
       background: white;
       padding: 10px;
@@ -39,19 +39,20 @@
 <body>
 
 <div id="controls">
-  <label>Gang:</label>
+  <label>Colour:</label>
   <select id="gang">
-    <option value="red">Ballas</option>
-    <option value="green">Families</option>
-    <option value="yellow">Vagos</option>
-    <option value="blue">Police</option>
+    <option value="red">Red</option>
+    <option value="green">Green</option>
+    <option value="yellow">Yellow</option>
+    <option value="blue">Blue</option>
+    <option value="purple">Purple</option>
   </select>
 
   <label>Radius:</label>
-  <input type="range" id="radius" min="100" max="2000" value="500">
+  <input type="range" id="radius" min="100" max="1000" value="300">
 
-  <label>Label:</label>
-  <input type="text" id="label" placeholder="Enter note...">
+  <label>Notes:</label>
+  <input type="text" id="label" placeholder="Enter gang name / info">
 </div>
 
 <div id="map"></div>
@@ -77,7 +78,6 @@
 
   var zones = [];
 
-  // LOAD SAVED ZONES
   function loadZones() {
     var saved = JSON.parse(localStorage.getItem('zones') || "[]");
 
@@ -86,12 +86,10 @@
     });
   }
 
-  // SAVE ZONES
   function saveZones() {
     localStorage.setItem('zones', JSON.stringify(zones));
   }
 
-  // CREATE ZONE FUNCTION
   function createZone(lat, lng, radius, color, label, save=true) {
     var circle = L.circle([lat, lng], {
       radius: radius,
@@ -102,7 +100,6 @@
 
     circle.bindPopup(label || "Zone");
 
-    // RIGHT CLICK = DELETE
     circle.on('contextmenu', function() {
       map.removeLayer(circle);
       zones = zones.filter(z => z.id !== circle._leaflet_id);
@@ -122,7 +119,6 @@
     }
   }
 
-  // CLICK TO ADD ZONE
   map.on('click', function(e) {
     var color = document.getElementById('gang').value;
     var radius = parseInt(document.getElementById('radius').value);
