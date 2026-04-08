@@ -5,10 +5,15 @@
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
 
+  <!-- CID TYPEWRITER FONT -->
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
+
   <style>
     html, body {
       margin: 0;
       height: 100%;
+      font-family: 'Special Elite', monospace;
+      background: #000;
     }
 
     #map {
@@ -24,10 +29,12 @@
       z-index: 1000;
       background: #111;
       color: white;
-      padding: 10px;
+      padding: 12px;
       border-radius: 8px;
-      font-family: Arial;
-      width: 200px;
+      width: 220px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      box-shadow: 0 0 10px rgba(0,0,0,0.8);
     }
 
     #controls input,
@@ -37,12 +44,13 @@
       background: #222;
       color: white;
       border: 1px solid #444;
-      padding: 4px;
+      padding: 5px;
+      font-family: 'Special Elite', monospace;
     }
 
     #controls label {
-      font-size: 12px;
-      opacity: 0.8;
+      font-size: 11px;
+      opacity: 0.7;
     }
   </style>
 </head>
@@ -54,7 +62,7 @@
   <select id="mode">
     <option value="circle">Zone</option>
     <option value="bench">Workbench</option>
-    <option value="g">G Marker</option>
+    <option value="g">Gregory</option>
   </select>
 
   <label>Colour:</label>
@@ -70,7 +78,7 @@
   <input type="range" id="radius" min="25" max="250" step="10" value="100">
 
   <label>Notes:</label>
-  <input type="text" id="label" placeholder="Enter info">
+  <input type="text" id="label" placeholder="Enter intel...">
 </div>
 
 <div id="map"></div>
@@ -98,16 +106,16 @@
 
   // 🔧 WORKBENCH ICON
   var benchIcon = L.divIcon({
-    html: "<span style='color:#ff9900;font-size:16px;'>⚒</span>",
+    html: "<span style='color:#ff9900;font-size:32px;text-shadow:-2px -2px 0 black,2px -2px 0 black,-2px 2px 0 black,2px 2px 0 black;'>⚒</span>",
     className: "",
-    iconSize: [20, 20]
+    iconSize: [32, 32]
   });
 
-  // 🟢 G ICON
+  // 🟢 GREGORY ICON
   var gIcon = L.divIcon({
-    html: "<span style='color:lime;font-weight:bold;font-size:16px;'>G</span>",
+    html: "<span style='color:lime;font-weight:bold;font-size:32px;text-shadow:-2px -2px 0 black,2px -2px 0 black,-2px 2px 0 black,2px 2px 0 black;'>G</span>",
     className: "",
-    iconSize: [20, 20]
+    iconSize: [32, 32]
   });
 
   let currentZones = {};
@@ -162,7 +170,7 @@
     }
   }
 
-  // 💾 SAVE ZONE / MARKER
+  // 💾 SAVE
   async function saveData(data) {
     await fetch(API, {
       method: "POST",
@@ -173,7 +181,7 @@
     });
   }
 
-  // 🖱️ CLICK HANDLER
+  // 🖱️ CLICK
   map.on('click', async function(e) {
     var mode = document.getElementById('mode').value;
     var color = document.getElementById('gang').value;
@@ -218,5 +226,7 @@
   syncZones();
 </script>
 
+</body>
+</html>
 </body>
 </html>
