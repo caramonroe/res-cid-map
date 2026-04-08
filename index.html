@@ -18,7 +18,10 @@
     minZoom: -2
   });
 
-  var bounds = [[0,0], [1000,1000]];
+var width = 5944;
+var height = 8075;
+
+var bounds = [[0, 0], [height, width]];
   var image = L.imageOverlay('map.jpg', bounds).addTo(map);
 
   map.fitBounds(bounds);
