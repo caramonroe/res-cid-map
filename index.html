@@ -23,9 +23,15 @@
       left: 10px;
       z-index: 1000;
       background: white;
-      padding: 8px;
+      padding: 10px;
       border-radius: 8px;
       font-family: Arial;
+      width: 200px;
+    }
+
+    input, select {
+      width: 100%;
+      margin-bottom: 5px;
     }
   </style>
 </head>
@@ -40,6 +46,12 @@
     <option value="yellow">Vagos</option>
     <option value="blue">Police</option>
   </select>
+
+  <label>Radius:</label>
+  <input type="range" id="radius" min="100" max="2000" value="500">
+
+  <label>Label:</label>
+  <input type="text" id="label" placeholder="Enter note...">
 </div>
 
 <div id="map"></div>
@@ -47,40 +59,79 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-  // CREATE MAP
   var map = L.map('map', {
     crs: L.CRS.Simple,
     minZoom: -5,
     maxZoom: 2
   });
 
-  // IMAGE SIZE (IMPORTANT)
   var width = 5944;
   var height = 8075;
-
   var bounds = [[0, 0], [height, width]];
 
-  // LOAD IMAGE
   var image = L.imageOverlay('map.jpg', bounds).addTo(map);
 
-  // FIX VIEW
   map.fitBounds(bounds);
   map.setZoom(-2);
   map.setMaxBounds(bounds);
 
-  // CLICK = CREATE ZONE
-  map.on('click', function(e) {
-    var gangColor = document.getElementById('gang').value;
+  var zones = [];
 
-    L.circle(e.latlng, {
-      radius: 500,
-      color: gangColor,
-      fillColor: gangColor,
+  // LOAD SAVED ZONES
+  function loadZones() {
+    var saved = JSON.parse(localStorage.getItem('zones') || "[]");
+
+    saved.forEach(z => {
+      createZone(z.lat, z.lng, z.radius, z.color, z.label, false);
+    });
+  }
+
+  // SAVE ZONES
+  function saveZones() {
+    localStorage.setItem('zones', JSON.stringify(zones));
+  }
+
+  // CREATE ZONE FUNCTION
+  function createZone(lat, lng, radius, color, label, save=true) {
+    var circle = L.circle([lat, lng], {
+      radius: radius,
+      color: color,
+      fillColor: color,
       fillOpacity: 0.4
-    }).addTo(map)
-      .bindPopup(gangColor + " zone")
-      .openPopup();
+    }).addTo(map);
+
+    circle.bindPopup(label || "Zone");
+
+    // RIGHT CLICK = DELETE
+    circle.on('contextmenu', function() {
+      map.removeLayer(circle);
+      zones = zones.filter(z => z.id !== circle._leaflet_id);
+      saveZones();
+    });
+
+    if (save) {
+      zones.push({
+        id: circle._leaflet_id,
+        lat,
+        lng,
+        radius,
+        color,
+        label
+      });
+      saveZones();
+    }
+  }
+
+  // CLICK TO ADD ZONE
+  map.on('click', function(e) {
+    var color = document.getElementById('gang').value;
+    var radius = parseInt(document.getElementById('radius').value);
+    var label = document.getElementById('label').value;
+
+    createZone(e.latlng.lat, e.latlng.lng, radius, color, label);
   });
+
+  loadZones();
 </script>
 
 </body>
