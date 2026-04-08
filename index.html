@@ -1,46 +1,29 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>GTA CID Map</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <style>
-    #map { height: 100vh; background: #111; }
-  </style>
-</head>
-<body>
-
-<div id="map"></div>
-
-<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>
   var map = L.map('map', {
-  crs: L.CRS.Simple,
-  minZoom: -5,   // allows more zooming out
-  maxZoom: 2,
-  zoomSnap: 0.25
-});
+    crs: L.CRS.Simple,
+    minZoom: -5,
+    maxZoom: 2,
+    zoomSnap: 0.25
+  });
 
-var width = 5944;
-var height = 8075;
+  var width = 5944;
+  var height = 8075;
 
-var bounds = [[0, 0], [height, width]];
+  var bounds = [[0, 0], [height, width]];
+
   var image = L.imageOverlay('map.jpg', bounds).addTo(map);
 
+  map.fitBounds(bounds);   // ✅ THIS WAS MISSING
   map.setZoom(-2);
 
-  // Click to add marker
   map.on('click', function(e) {
-  L.circle(e.latlng, {
-    radius: 300, // size of the zone
-    color: 'red',
-    fillColor: 'red',
-    fillOpacity: 0.4
-  }).addTo(map)
-    .bindPopup("Gang Zone")
-    .openPopup();
-});
-  
+    L.circle(e.latlng, {
+      radius: 300,
+      color: 'red',
+      fillColor: 'red',
+      fillOpacity: 0.4
+    }).addTo(map)
+      .bindPopup("Gang Zone")
+      .openPopup();
+  });
 </script>
-
-</body>
-</html>
