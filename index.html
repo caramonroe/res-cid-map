@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>GTA CID Map</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map { height: 100vh; background: #111; }
+  </style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+  var map = L.map('map', {
+    crs: L.CRS.Simple,
+    minZoom: -2
+  });
+
+  var bounds = [[0,0], [1000,1000]];
+  var image = L.imageOverlay('map.jpg', bounds).addTo(map);
+
+  map.fitBounds(bounds);
+
+  // Click to add marker
+  map.on('click', function(e) {
+    L.marker(e.latlng).addTo(map)
+      .bindPopup("New Marker")
+      .openPopup();
+  });
+</script>
+
+</body>
+</html>
