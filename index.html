@@ -39,12 +39,24 @@
       border: 1px solid #444;
       padding: 4px;
     }
+
+    #controls label {
+      font-size: 12px;
+      opacity: 0.8;
+    }
   </style>
 </head>
 
 <body>
 
 <div id="controls">
+  <label>Mode:</label>
+  <select id="mode">
+    <option value="circle">Zone</option>
+    <option value="bench">Workbench</option>
+    <option value="g">G Marker</option>
+  </select>
+
   <label>Colour:</label>
   <select id="gang">
     <option value="red">Red</option>
@@ -84,9 +96,23 @@
   map.setZoom(-2);
   map.setMaxBounds(bounds);
 
+  // 🔧 WORKBENCH ICON
+  var benchIcon = L.divIcon({
+    html: "<span style='color:#ff9900;font-size:16px;'>⚒</span>",
+    className: "",
+    iconSize: [20, 20]
+  });
+
+  // 🟢 G ICON
+  var gIcon = L.divIcon({
+    html: "<span style='color:lime;font-weight:bold;font-size:16px;'>G</span>",
+    className: "",
+    iconSize: [20, 20]
+  });
+
   let currentZones = {};
 
-  // LOAD + SYNC ZONES
+  // 🔄 SYNC DATA
   async function syncZones() {
     const res = await fetch(API);
     const zones = await res.json();
@@ -96,23 +122,34 @@
     zones.forEach(z => {
       newIds.add(z.id);
 
-      // If zone doesn't exist yet → add it
       if (!currentZones[z.id]) {
-        const circle = L.circle([z.lat, z.lng], {
-          radius: z.radius,
-          color: z.color,
-          fillColor: z.color,
-          fillOpacity: 0.4
-        }).addTo(map);
 
-        circle.bindPopup(z.label || "Zone");
+        let layer;
+
+        if (z.color === "bench") {
+          layer = L.marker([z.lat, z.lng], { icon: benchIcon });
+        } 
+        else if (z.color === "g") {
+          layer = L.marker([z.lat, z.lng], { icon: gIcon });
+        } 
+        else {
+          layer = L.circle([z.lat, z.lng], {
+            radius: z.radius,
+            color: z.color,
+            fillColor: z.color,
+            fillOpacity: 0.4
+          });
+        }
+
+        layer.addTo(map);
+        layer.bindPopup(z.label || "Marker");
 
         // DELETE
-        circle.on('contextmenu', async function() {
+        layer.on('contextmenu', async function() {
           await fetch(`${API}?id=${z.id}`, { method: "DELETE" });
         });
 
-        currentZones[z.id] = circle;
+        currentZones[z.id] = layer;
       }
     });
 
@@ -125,31 +162,61 @@
     }
   }
 
-  // SAVE
-  async function saveZone(lat, lng, radius, color, label) {
+  // 💾 SAVE ZONE / MARKER
+  async function saveData(data) {
     await fetch(API, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ lat, lng, radius, color, label })
+      body: JSON.stringify(data)
     });
   }
 
-  // CLICK = CREATE (NO RELOAD)
+  // 🖱️ CLICK HANDLER
   map.on('click', async function(e) {
+    var mode = document.getElementById('mode').value;
     var color = document.getElementById('gang').value;
     var radius = parseInt(document.getElementById('radius').value);
     var label = document.getElementById('label').value;
 
-    await saveZone(e.latlng.lat, e.latlng.lng, radius, color, label);
+    if (mode === "circle") {
+      await saveData({
+        lat: e.latlng.lat,
+        lng: e.latlng.lng,
+        radius,
+        color,
+        label
+      });
+    }
+
+    if (mode === "bench") {
+      await saveData({
+        lat: e.latlng.lat,
+        lng: e.latlng.lng,
+        radius: 0,
+        color: "bench",
+        label
+      });
+    }
+
+    if (mode === "g") {
+      await saveData({
+        lat: e.latlng.lat,
+        lng: e.latlng.lng,
+        radius: 0,
+        color: "g",
+        label
+      });
+    }
   });
 
-  // 🔁 AUTO SYNC EVERY 2 SECONDS
+  // 🔁 AUTO SYNC
   setInterval(syncZones, 2000);
 
   // INITIAL LOAD
   syncZones();
 </script>
+
 </body>
 </html>
