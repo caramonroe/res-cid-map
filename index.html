@@ -4,20 +4,24 @@
   <title>CID Map System</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&display=swap" rel="stylesheet">
+
+  <!-- CLEAN TYPEWRITER FONT -->
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime&display=swap" rel="stylesheet">
 
   <style>
     html, body {
       margin: 0;
       height: 100%;
       background: #000;
-      font-family: 'Special Elite', monospace;
+      font-family: 'Courier Prime', monospace;
+      color: white;
     }
 
     #map {
       height: 100%;
       width: 100%;
       display: none;
+      background: #000;
     }
 
     .leaflet-container {
@@ -31,16 +35,22 @@
       left: 50%;
       transform: translate(-50%, -50%);
       background: #111;
-      padding: 20px;
+      padding: 25px;
       border-radius: 10px;
       border: 1px solid #333;
       text-align: center;
+      color: white;
+      box-shadow: 0 0 20px rgba(0,0,0,0.9);
+    }
+
+    #login h3 {
+      margin-bottom: 10px;
     }
 
     #login input {
       background: #222;
       color: white;
-      border: 1px solid #444;
+      border: 1px solid #555;
       padding: 8px;
       margin-top: 10px;
     }
@@ -61,13 +71,15 @@
       left: 50%;
       transform: translateX(-50%);
       z-index: 1000;
+
       background: #111;
       padding: 10px;
       border-radius: 10px;
       border: 1px solid #333;
+
       display: flex;
-      gap: 6px;
       flex-wrap: wrap;
+      gap: 6px;
     }
 
     #toolbar input,
@@ -76,14 +88,38 @@
       color: white;
       border: 1px solid #444;
       padding: 5px;
-      font-family: 'Special Elite', monospace;
+      font-family: 'Courier Prime', monospace;
+      font-size: 14px;
     }
 
+    #toolbar button {
+      background: #222;
+      color: white;
+      border: 1px solid #444;
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+
+    #toolbar button.active {
+      background: red;
+    }
+
+    /* TOOLTIP */
     .leaflet-tooltip {
       background: rgba(0,0,0,0.9);
       color: white;
       border: 1px solid #444;
-      font-family: 'Special Elite', monospace;
+      font-family: 'Courier Prime', monospace;
+    }
+
+    /* MOBILE */
+    @media (max-width: 600px) {
+      #toolbar {
+        top: auto;
+        bottom: 10px;
+        flex-direction: column;
+        width: 90%;
+      }
     }
   </style>
 </head>
@@ -95,7 +131,7 @@
   <h3>CID ACCESS</h3>
   <input type="password" id="password" placeholder="Enter password">
   <br>
-  <button onclick="checkPassword()">Enter</button>
+  <button onclick="checkPassword()">ENTER</button>
 </div>
 
 <!-- TOOLBAR -->
@@ -122,11 +158,11 @@
 <script>
 const API = "https://res-cid-api.cara-monroe-docs.workers.dev";
 
-// 🔐 PASSWORD
+// PASSWORD CHECK
 function checkPassword() {
   const pass = document.getElementById("password").value;
 
-  if (pass === "Hades") {
+  if (pass === "CaraCara") {
     document.getElementById("login").style.display = "none";
     document.getElementById("map").style.display = "block";
     document.getElementById("toolbar").style.display = "flex";
@@ -136,7 +172,7 @@ function checkPassword() {
   }
 }
 
-// MAP
+// MAP SETUP
 var map = L.map('map', {
   crs: L.CRS.Simple,
   minZoom: -5,
@@ -149,6 +185,9 @@ L.imageOverlay('map.jpg', bounds).addTo(map);
 map.fitBounds(bounds);
 map.setZoom(-2);
 map.setMaxBounds(bounds);
+
+// PREVENT MOBILE LONG PRESS
+document.addEventListener('contextmenu', e => e.preventDefault());
 
 // ICONS
 var benchIcon = L.divIcon({
@@ -171,7 +210,7 @@ document.getElementById("deleteMode").onclick = function() {
   this.classList.toggle("active");
 };
 
-// SYNC
+// SYNC DATA
 async function syncZones() {
   const res = await fetch(API);
   const zones = await res.json();
@@ -231,7 +270,7 @@ async function saveData(data) {
   });
 }
 
-// CLICK
+// CLICK MAP
 map.on('click', async function(e) {
 
   if (deleteMode) return;
@@ -260,3 +299,4 @@ syncZones();
 
 </body>
 </html>
+
