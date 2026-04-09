@@ -10,102 +10,103 @@
     html, body {
       margin: 0;
       height: 100%;
-      background: #000 !important;
+      background: #000;
       font-family: 'Special Elite', monospace;
     }
 
     #map {
       height: 100%;
       width: 100%;
-      background: #000 !important;
+      display: none;
     }
 
     .leaflet-container {
       background: #000 !important;
     }
 
-    /* CENTERED TOOLBAR */
+    /* LOGIN SCREEN */
+    #login {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #111;
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      text-align: center;
+    }
+
+    #login input {
+      background: #222;
+      color: white;
+      border: 1px solid #444;
+      padding: 8px;
+      margin-top: 10px;
+    }
+
+    #login button {
+      margin-top: 10px;
+      padding: 8px;
+      background: #222;
+      color: white;
+      border: 1px solid #444;
+      cursor: pointer;
+    }
+
+    /* TOOLBAR */
     #toolbar {
       position: absolute;
       top: 10px;
       left: 50%;
       transform: translateX(-50%);
       z-index: 1000;
-
       background: #111;
-      color: white;
-
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-
-      padding: 10px 12px;
+      padding: 10px;
       border-radius: 10px;
-
       border: 1px solid #333;
-      box-shadow: 0 0 15px rgba(0,0,0,0.8);
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
     }
 
-    #toolbar select,
-    #toolbar input {
+    #toolbar input,
+    #toolbar select {
       background: #222;
       color: white;
       border: 1px solid #444;
       padding: 5px;
       font-family: 'Special Elite', monospace;
-      font-size: 14px;
     }
 
-    #toolbar button {
-      background: #222;
-      color: white;
-      border: 1px solid #444;
-      padding: 5px 8px;
-      cursor: pointer;
-    }
-
-    #toolbar button.active {
-      background: red;
-    }
-
-    /* TOOLTIP STYLE */
     .leaflet-tooltip {
       background: rgba(0,0,0,0.9);
       color: white;
       border: 1px solid #444;
       font-family: 'Special Elite', monospace;
     }
-
-    /* MOBILE */
-    @media (max-width: 600px) {
-      #toolbar {
-        top: auto;
-        bottom: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        flex-direction: column;
-        width: 90%;
-      }
-    }
   </style>
 </head>
 
 <body>
 
-<div id="toolbar">
+<!-- LOGIN -->
+<div id="login">
+  <h3>CID ACCESS</h3>
+  <input type="password" id="password" placeholder="Enter password">
+  <br>
+  <button onclick="checkPassword()">Enter</button>
+</div>
+
+<!-- TOOLBAR -->
+<div id="toolbar" style="display:none;">
   <select id="mode">
     <option value="circle">Zone</option>
     <option value="bench">Workbench</option>
     <option value="g">Gregory</option>
   </select>
 
-  <select id="gang">
-    <option value="red">Red</option>
-    <option value="green">Green</option>
-    <option value="yellow">Yellow</option>
-    <option value="blue">Blue</option>
-    <option value="purple">Purple</option>
-  </select>
+  <input type="color" id="colorPicker" value="#ff0000">
 
   <input type="range" id="radius" min="25" max="250" step="10" value="100">
 
@@ -121,6 +122,21 @@
 <script>
 const API = "https://res-cid-api.cara-monroe-docs.workers.dev";
 
+// 🔐 PASSWORD
+function checkPassword() {
+  const pass = document.getElementById("password").value;
+
+  if (pass === "CaraCara") {
+    document.getElementById("login").style.display = "none";
+    document.getElementById("map").style.display = "block";
+    document.getElementById("toolbar").style.display = "flex";
+    map.invalidateSize();
+  } else {
+    alert("Incorrect password");
+  }
+}
+
+// MAP
 var map = L.map('map', {
   crs: L.CRS.Simple,
   minZoom: -5,
@@ -134,18 +150,15 @@ map.fitBounds(bounds);
 map.setZoom(-2);
 map.setMaxBounds(bounds);
 
-// PREVENT LONG PRESS MENU
-document.addEventListener('contextmenu', e => e.preventDefault());
-
 // ICONS
 var benchIcon = L.divIcon({
-  html: "<span style='color:#ff9900;font-size:20px;text-shadow:-1px -1px 0 black,1px -1px 0 black,-1px 1px 0 black,1px 1px 0 black;'>⚒</span>",
+  html: "<span style='color:#ff9900;font-size:20px;text-shadow:0 0 2px black;'>⚒</span>",
   className: "",
   iconSize: [20,20]
 });
 
 var gIcon = L.divIcon({
-  html: "<span style='color:lime;font-weight:bold;font-size:20px;text-shadow:-1px -1px 0 black,1px -1px 0 black,-1px 1px 0 black,1px 1px 0 black;'>G</span>",
+  html: "<span style='color:lime;font-size:20px;text-shadow:0 0 2px black;'>G</span>",
   className: "",
   iconSize: [20,20]
 });
@@ -153,13 +166,12 @@ var gIcon = L.divIcon({
 let currentZones = {};
 let deleteMode = false;
 
-// TOGGLE DELETE MODE
 document.getElementById("deleteMode").onclick = function() {
   deleteMode = !deleteMode;
   this.classList.toggle("active");
 };
 
-// SYNC DATA
+// SYNC
 async function syncZones() {
   const res = await fetch(API);
   const zones = await res.json();
@@ -190,13 +202,8 @@ async function syncZones() {
 
       layer.addTo(map);
 
-      // HOVER TOOLTIP
-      layer.bindTooltip(z.label || "Marker", {
-        direction: "top",
-        offset: [0, -10]
-      });
+      layer.bindTooltip(z.label || "Marker");
 
-      // DELETE
       layer.on('click', async function() {
         if (deleteMode) {
           await fetch(`${API}?id=${z.id}`, { method: "DELETE" });
@@ -215,7 +222,7 @@ async function syncZones() {
   }
 }
 
-// SAVE DATA
+// SAVE
 async function saveData(data) {
   await fetch(API, {
     method: "POST",
@@ -224,13 +231,13 @@ async function saveData(data) {
   });
 }
 
-// MAP CLICK
+// CLICK
 map.on('click', async function(e) {
 
   if (deleteMode) return;
 
   var mode = document.getElementById('mode').value;
-  var color = document.getElementById('gang').value;
+  var color = document.getElementById('colorPicker').value;
   var radius = parseInt(document.getElementById('radius').value);
   var label = document.getElementById('label').value;
 
@@ -247,12 +254,8 @@ map.on('click', async function(e) {
   }
 });
 
-// REALTIME LOOP
 setInterval(syncZones, 2000);
 syncZones();
-
-// MOBILE FIX
-window.addEventListener('resize', () => map.invalidateSize());
 </script>
 
 </body>
